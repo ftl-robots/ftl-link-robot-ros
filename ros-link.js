@@ -5,7 +5,10 @@ const DiagnosticMsgs = rosnodejs.require("diagnostic_msgs");
 // ROS Message Types
 const DiagnosticStatus = DiagnosticMsgs.msg.DiagnosticStatus;
 
-class RosLink extends EventEmitter {
+/**
+ * Robot-side FTL Link node that connects to ROS
+ */
+class ROSLink extends EventEmitter {
     constructor() {
         super();
         this.d_rosNodeHandle = null;
@@ -79,4 +82,14 @@ class RosLink extends EventEmitter {
     }
 }
 
-module.exports = RosLink;
+/**
+ * Outputs Changed event
+ *
+ * This event is fired when any output (PWM, digital, analog etc) is changed
+ * @event ROSLink#outputsChanged
+ * @type {object}
+ * @property {string} type The type of output that was changed
+ * @property {object} values KeyValue map of port number to output value
+ */
+
+module.exports = ROSLink;
