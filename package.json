@@ -1,5 +1,5 @@
 {
-  "name": "ftl-link-robot-ros",
+  "name": "@ftl-robots/ftl-link-robot-ros",
   "version": "1.0.0",
   "description": "Implementation of a Robot-side FTLLink interface using ROS",
   "main": "index.js",

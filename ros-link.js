@@ -4,6 +4,9 @@ const DiagnosticMsgs = rosnodejs.require("diagnostic_msgs");
 
 // ROS Message Types
 const DiagnosticStatus = DiagnosticMsgs.msg.DiagnosticStatus;
+const KeyValue = DiagnosticMsgs.msg.KeyValue;
+
+const PUBLISH_INTERVAL_MS = 50;
 
 /**
  * Robot-side FTL Link node that connects to ROS
@@ -15,6 +18,9 @@ class ROSLink extends EventEmitter {
         this.d_readyP = null;
         this.d_outputSub = null;
         this.d_inputPub = null;
+
+        this.d_publishQueueInterval = null;
+        this.d_publishQueue = [];
     }
 
     start() {
@@ -63,6 +69,17 @@ class ROSLink extends EventEmitter {
                         });
 
                     this.d_inputPub = nodeHandle.advertise("ftl_hardware_inputs", DiagnosticStatus);
+
+                    // Set up the sending interval
+                    setInterval(() => {
+                        if (this.d_publishQueue.length > 0) {
+                            this.d_publishQueue.forEach((msg) => {
+                                this.d_inputPub.publish(msg);
+                            });
+
+                            this.d_publishQueue = [];
+                        }
+                    }, PUBLISH_INTERVAL_MS);
                 });
     }
 
@@ -71,7 +88,38 @@ class ROSLink extends EventEmitter {
     }
 
     advertiseInputsChanged(type, changeSet) {
+        if (type !== "analog" && type !== "digital") {
+            return;
+        }
 
+        if (!this.isReady()) {
+            return;
+        }
+
+        // Generate the DiagnosticStatus message and queue it
+        var msg = new DiagnosticStatus();
+        msg.name = type;
+
+        switch (type) {
+            case "analog": {
+                Object.keys(changeSet).forEach((port) => {
+                    var kv = new KeyValue();
+                    kv.key = port.toString();
+                    kv.value = changeSet[port].toString();
+                    msg.values.push(kv);
+                });
+            } break;
+            case "digital": {
+                Object.keys(changeSet).forEach((port) => {
+                    var kv = new KeyValue();
+                    kv.key = port.toString();
+                    kv.value = changeSet[port] ? "1" : "0";
+                    msg.values.push(kv);
+                });
+            } break;
+        }
+
+        this.d_publishQueue.push(msg);
     }
 
     _ensureReady() {
